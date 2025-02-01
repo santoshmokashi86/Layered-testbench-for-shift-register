@@ -1,0 +1,53 @@
+module tb_shift_register_layered();
+
+    parameter WIDTH = 8;
+
+    // Instantiate the interface
+    shift_register_if #(WIDTH) ifc();
+
+    // DUT instantiation
+    shift_register_variable #(.WIDTH(WIDTH)) dut (
+        .clk(ifc.clk),
+        .reset(ifc.reset),
+        .shift_count(ifc.shift_count),
+        .dir(ifc.dir),
+        .serial_in(ifc.serial_in),
+        .q(ifc.q)
+    );
+
+    // Driver, Monitor, and Scoreboard instances
+    shift_register_driver driver;
+    shift_register_monitor monitor;
+    shift_register_scoreboard scoreboard;
+
+    // Test initialization
+    initial begin
+        driver = new(ifc);
+        monitor = new(ifc);
+        scoreboard = new(ifc);
+
+        fork
+            monitor.observe(); // Start observing the outputs
+        join_none
+
+        // Test cases
+        // 1. Reset
+        driver.drive(1, 0, 0, 0);
+        #20;
+        scoreboard.check(0); // Expected q after reset
+
+        // 2. Left shift by 3
+        driver.drive(0, 0, 3, 1);
+        #50; // Wait for shifts to complete
+        scoreboard.check(3'b111); // Expected q
+
+        // 3. Right shift by 2
+        driver.drive(0, 1, 2, 0);
+        #50;
+        scoreboard.check(3'b001); // Expected q
+
+        // Add more test cases as needed
+        $finish;
+    end
+
+endmodule
